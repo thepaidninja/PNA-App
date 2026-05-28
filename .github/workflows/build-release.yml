@@ -1,0 +1,51 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyinstaller pillow
+
+      - name: Prepare source file
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $versioned = "audit_pro v$version.py"
+          if (Test-Path $versioned) {
+            Copy-Item $versioned audit_pro.py
+          } else {
+            $latest = Get-ChildItem "audit_pro v*.py" | Sort-Object Name | Select-Object -Last 1
+            Copy-Item $latest.FullName audit_pro.py
+          }
+
+      - name: Build executable
+        run: pyinstaller "Pai Nayak and Associates.spec"
+
+      - name: Rename exe with version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          Rename-Item "dist\Pai Nayak and Associates.exe" "dist\Pai Nayak and Associates v$version.exe"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          generate_release_notes: true

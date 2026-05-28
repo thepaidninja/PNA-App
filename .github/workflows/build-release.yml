@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          Rename-Item "dist\Pai Nayak and Associates.exe" "dist\Pai Nayak and Associates v$version.exe"
+          Rename-Item "dist\Pai Nayak and Associates.exe" "Pai Nayak and Associates v$version.exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

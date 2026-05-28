@@ -6,8 +6,10 @@ Fully offline Windows desktop application
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import copy
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -2773,8 +2775,15 @@ def _draw_capsule(cv, x1, y1, x2, y2, **kw):
     cv.create_oval(x2 - h, y1, x2, y2, **kw)
     cv.create_rectangle(x1 + h // 2, y1, x2 - h // 2, y2, **kw)
 
+_INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
+
+def _safe_filename(name):
+    """Strip characters that are invalid in Windows filenames."""
+    return _INVALID_FILENAME_CHARS.sub("", name).strip() or "Untitled"
+
+
 def _setup_ttk_styles(root):
-    """Configure shared ttk styles (scrollbars, etc.) once at startup."""
+    """Configure shared ttk styles (scrollbars, comboboxes, etc.) once at startup."""
     style = ttk.Style(root)
     style.theme_use("default")
     style.configure("Thin.Vertical.TScrollbar",
@@ -2789,6 +2798,10 @@ def _setup_ttk_styles(root):
         width=8)
     style.map("Thin.Vertical.TScrollbar",
         background=[("active", C["muted"]), ("pressed", C["muted"])])
+    style.configure("TCombobox",
+        fieldbackground=C["input_bg"], background=C["input_bg"],
+        foreground=C["text"], selectbackground=C["highlight"],
+        selectforeground=C["text"], arrowcolor=C["accent"])
 
 def bind_tree(widget, event, handler, exclude=None):
     """Recursively bind event+handler to widget and all descendants."""
@@ -2833,8 +2846,6 @@ def make_engagement(audit_type, fy, std=None):
         "pre_audit_docs": {},
         "ifc": {},
         "sch3": {},
-        "ifc_na": False,
-        "caro_na": False,
         "financials": {},
         "fin_checklist": {},
         "ifc_na": False,
@@ -2874,13 +2885,24 @@ def migrate(data):
             e.setdefault("legal_sec", {})
             e.setdefault("locked", False)
             e.setdefault("caro", {})
+            e.setdefault("ifc", {})
+            e.setdefault("sch3", {})
+            e.setdefault("financials", {})
+            e.setdefault("fin_checklist", {})
+            e.setdefault("pre_audit_docs", {})
+            e.setdefault("workpapers", {})
+            e.setdefault("engagement_notes", "")
+            e.setdefault("ifc_na", False)
+            e.setdefault("caro_na", False)
+            e.setdefault("variance_analysis", {
+                "balance_sheet": {}, "profit_loss": {},
+                "cy_label": "CY", "py_label": "PY"})
             # Back-fill version stamps for files created before versioning was added
             fy = e.get("financial_year", FINANCIAL_YEARS[0])
             e.setdefault("form3cd_version",     _default_ver(FORM3CD_VERSION_BY_FY,     fy))
             e.setdefault("caro_version",         _default_ver(CARO_VERSION_BY_FY,        fy))
             e.setdefault("notes_as_version",     _default_ver(AS_NOTES_VERSION_BY_FY,    fy))
             e.setdefault("notes_indas_version",  _default_ver(INDAS_NOTES_VERSION_BY_FY, fy))
-            e.setdefault("ifc", {})
         return data
     eng = make_engagement(
         data.get("audit_type", "Statutory Audit"),
@@ -3072,12 +3094,6 @@ class EngagementDialog(tk.Toplevel):
                  fg=C["muted"], font=FONT_SMALL).pack(anchor="w", pady=(8, 2))
         start_fy = (self._ex or {}).get("financial_year", FINANCIAL_YEARS[0])
         self._fy = tk.StringVar(value=start_fy)
-        style = ttk.Style()
-        style.theme_use("default")
-        style.configure("TCombobox",
-            fieldbackground=C["input_bg"], background=C["input_bg"],
-            foreground=C["text"], selectbackground=C["highlight"],
-            selectforeground=C["text"], arrowcolor=C["accent"])
         ttk.Combobox(card, textvariable=self._fy, values=FINANCIAL_YEARS,
                      state="readonly", font=FONT_BODY, width=38
                      ).pack(fill="x", ipady=4)
@@ -4014,6 +4030,7 @@ class EngagementWindow(tk.Toplevel):
 
         def _save_comment(*_, dk=q_key, sk=sec_key, cv=comment_var):
             self._eng["ifc"][sk][dk]["comment"] = cv.get()
+            self._panel._mark_dirty()
 
         comment_var.trace_add("write", _save_comment)
 
@@ -5072,7 +5089,7 @@ class EngagementWindow(tk.Toplevel):
 
     def _on_close(self):
         self._flush_clause()
-        if self._panel._dirty and not self._eng.get("locked", False):
+        if self._panel._dirty:
             ans = messagebox.askyesnocancel(
                 "Unsaved Changes",
                 "You have unsaved changes.\n\nSave before closing?",
@@ -5830,9 +5847,9 @@ class EngagementWindow(tk.Toplevel):
         tk.Label(body, text="Note Number",
                  bg=C["bg"], fg=C["muted"],
                  font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 3))
-        num_var = tk.StringVar()
-        styled_entry(body, textvariable=num_var, width=12
-                     ).pack(anchor="w", ipady=5)
+        num_var   = tk.StringVar()
+        num_entry = styled_entry(body, textvariable=num_var, width=12)
+        num_entry.pack(anchor="w", ipady=5)
 
         tk.Label(body, text="Note Name / Description",
                  bg=C["bg"], fg=C["muted"],
@@ -5887,8 +5904,7 @@ class EngagementWindow(tk.Toplevel):
             bd=0, padx=12, pady=8, command=dlg.destroy)
         cancel_btn.pack(side="left", padx=(8, 0))
 
-        name_var_entry = body.winfo_children()[-1]
-        dlg.bind("<Return>", lambda e: _create())
+        num_entry.bind("<Return>", lambda e: _create())
         dlg.wait_window()
 
     def _delete_custom_note(self, key):
@@ -5946,11 +5962,12 @@ class EngagementWindow(tk.Toplevel):
             pass
 
     def _update_progress(self):
-        wp    = self._eng.get("workpapers", {})
-        total = len(self._items)
+        wp           = self._eng.get("workpapers", {})
+        custom_count = sum(1 for k in wp if k.startswith("note_CUSTOM_"))
+        total        = len(self._items) + custom_count
         done  = sum(1 for v in wp.values() if v.get("status") == "Completed")
         na    = sum(1 for v in wp.values() if v.get("status") == "N/A")
-        pct   = int((done + na) / total * 100) if total else 0
+        pct   = min(100, int((done + na) / total * 100)) if total else 0
         if self._progress_lbl and self._progress_lbl.winfo_exists():
             self._progress_lbl.config(
                 text=f"{done} done · {na} N/A · {pct}% of {total}")
@@ -7472,10 +7489,10 @@ class DetailPanel(tk.Frame):
         is_tax = (eng.get("audit_type") == "Tax Audit")
         p = {}
 
-        # Pre-Audit Docs
+        # Pre-Audit Docs — storage keys are prefixed "pad_"
         pad_slots = PRE_AUDIT_DOCS_TAX if is_tax else PRE_AUDIT_DOCS_STAT
         pad       = eng.get("pre_audit_docs", {})
-        att_count = sum(1 for k, _ in pad_slots if pad.get(k))
+        att_count = sum(1 for k, _ in pad_slots if pad.get(f"pad_{k}"))
         p["preaudit"] = att_count / len(pad_slots) if pad_slots else 0.0
 
         # Financials
@@ -7505,7 +7522,7 @@ class DetailPanel(tk.Frame):
         else:
             p["sch3"] = None   # not applicable
 
-        # IFC
+        # IFC — responses stored under "response" key, valid values: Yes/No/Partial or na=True
         ifc_total = sum(len(qs) for _, _, qs in IFC_CHECKLISTS)
         ifc       = eng.get("ifc", {})
         if eng.get("ifc_na"):
@@ -7515,26 +7532,25 @@ class DetailPanel(tk.Frame):
             for sk, _, qs in IFC_CHECKLISTS:
                 sec = ifc.get(sk, {})
                 for qk, _ in qs:
-                    ans = sec.get("q_" + qk.split("_")[-1], {})
-                    if isinstance(ans, dict) and ans.get("answer") in ("Yes", "No", "N/A"):
+                    ans = sec.get(qk, {})
+                    if isinstance(ans, dict) and (
+                            ans.get("response") in ("Yes", "No", "Partial")
+                            or ans.get("na")):
                         ifc_done += 1
             p["ifc"] = ifc_done / ifc_total
         else:
             p["ifc"] = 0.0
 
-        # CARO (statutory only)
+        # CARO (statutory only) — only count "item" rows, default status is "Not Checked"
         if not is_tax:
-            caro_its = [k for k, _, *_ in caro_items_for_eng(eng)
-                        if not str(_).startswith("—") if True]
-            # simpler: all keys in caro_items_for_eng
-            all_caro = caro_items_for_eng(eng)
-            caro_keys = [k for k, lbl, *_ in all_caro]
+            all_caro  = caro_items_for_eng(eng)
+            caro_keys = [k for k, lbl, kind, *_ in all_caro if kind == "item"]
             caro      = eng.get("caro", {})
             if eng.get("caro_na"):
                 p["caro"] = 1.0
             elif caro_keys:
                 caro_done = sum(1 for k in caro_keys
-                                if caro.get(k, {}).get("status", "Not Started") != "Not Started")
+                                if caro.get(k, {}).get("status", "Not Checked") != "Not Checked")
                 p["caro"] = caro_done / len(caro_keys)
             else:
                 p["caro"] = 0.0
@@ -7551,12 +7567,15 @@ class DetailPanel(tk.Frame):
         else:
             p["legalsec"] = None
 
-        # Variance — any CY data entered?
-        var = eng.get("variance", {})
+        # Variance — check for any non-zero CY values in variance_analysis
+        va = eng.get("variance_analysis", {})
         cy_vals = []
-        for kind in ("bs", "pl"):
-            cy_vals += [v for k, v in var.get(kind, {}).items()
-                        if k.endswith("_cy") and v not in (None, "", "0", 0)]
+        for section in ("balance_sheet", "profit_loss"):
+            for item_data in va.get(section, {}).values():
+                if isinstance(item_data, dict):
+                    cy = item_data.get("cy")
+                    if cy not in (None, "", "0", 0, 0.0):
+                        cy_vals.append(cy)
         p["variance"] = 1.0 if cy_vals else 0.0
 
         # Overall = mean of applicable tabs
@@ -7749,7 +7768,12 @@ class DetailPanel(tk.Frame):
         btn_bar.pack(side="bottom", fill="x")
 
         def _save_and_close():
-            self._data["company_name"]  = name_var.get().strip() or "Untitled"
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showwarning("Missing Name",
+                    "Company name cannot be blank.", parent=dlg)
+                return
+            self._data["company_name"]  = name
             self._data["company_cin"]   = cin_var.get().strip().upper()
             self._data["company_addr"]  = addr_text.get("1.0", "end").strip()
             self._data["company_notes"] = notes_text.get("1.0", "end").strip()
@@ -8166,6 +8190,7 @@ class DetailPanel(tk.Frame):
             eng["locked"] = True
         self._invalidate_cache(eid)
         self._mark_dirty()
+        self._save()
         self._rebuild_all_cards()
 
     def _add_eng(self):
@@ -8241,7 +8266,7 @@ class DetailPanel(tk.Frame):
             self._filepath = filedialog.asksaveasfilename(
                 defaultextension=FILE_EXT,
                 filetypes=[(FILE_EXT_DESC, f"*{FILE_EXT}"), ("All", "*.*")],
-                initialfile=f"{self._data['company_name'].replace(' ','_')}{FILE_EXT}")
+                initialfile=f"{_safe_filename(self._data['company_name'].replace(' ', '_'))}{FILE_EXT}")
             if not self._filepath:
                 return
 
@@ -8445,7 +8470,7 @@ class App:
         fp = filedialog.asksaveasfilename(
             defaultextension=FILE_EXT,
             filetypes=[(FILE_EXT_DESC, f"*{FILE_EXT}"), ("All", "*.*")],
-            initialfile=f"{data['company_name'].replace(' ','_')}{FILE_EXT}",
+            initialfile=f"{_safe_filename(data['company_name'].replace(' ', '_'))}{FILE_EXT}",
             title="Save New Company File")
         if not fp:
             return
@@ -8482,7 +8507,7 @@ class App:
     def _load_recent(self):
         try:
             if os.path.exists(self.RECENT):
-                with open(self.RECENT, "r") as f:
+                with open(self.RECENT, "r", encoding="utf-8") as f:
                     raw = json.load(f)
                 return [(p, d) for p, d in raw if os.path.exists(p)]
         except Exception:
@@ -8491,11 +8516,11 @@ class App:
 
     def _push_recent(self, fp, data):
         self._recent = [(p, d) for p, d in self._recent if p != fp]
-        self._recent.insert(0, (fp, data))
+        self._recent.insert(0, (fp, copy.deepcopy(data)))
         self._recent = self._recent[:10]
         try:
-            with open(self.RECENT, "w") as f:
-                json.dump(self._recent, f, indent=2)
+            with open(self.RECENT, "w", encoding="utf-8") as f:
+                json.dump(self._recent, f, indent=2, ensure_ascii=False)
         except Exception:
             pass
 
@@ -8534,6 +8559,15 @@ class App:
         EngagementWindow._temp_print_files.clear()
 
     def _on_exit(self):
+        if hasattr(self._panel, "_dirty") and self._panel._dirty:
+            ans = messagebox.askyesnocancel(
+                "Unsaved Changes",
+                "You have unsaved changes.\n\nSave before closing?",
+                parent=self.root)
+            if ans is None:
+                return
+            if ans:
+                self._panel._save()
         self._cleanup_print_files()
         self.root.quit()
 

@@ -1,0 +1,10 @@
+# PyInstaller output
+build/
+dist/
+
+# Working copies & scratch files
+audit_pro v*_dev.py
+*- Copy.py
+
+# Company data files
+*.caf

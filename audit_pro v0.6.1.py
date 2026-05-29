@@ -23,7 +23,7 @@ from datetime import datetime
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 APP_NAME        = "Pai Nayak & Associates"
-APP_VERSION     = "0.6.0"
+APP_VERSION     = "0.6.1"
 FILE_EXT        = ".caf"
 FILE_EXT_DESC   = "Company Audit File"
 AUDIT_TYPES     = ["Statutory Audit", "Tax Audit"]
@@ -841,6 +841,183 @@ C = {
     "lock_banner_bg":"#2A1A1E",
     "lock_banner_fg":"#FFC4CC",
 }
+
+# ── Themes ───────────────────────────────────────────────────────────────────
+# Each theme defines every key in the C palette. All variants are dark-background.
+# "Teal Dark" is the original palette verbatim. Themes are named after their
+# dominant colour combination rather than abstract style names.
+THEMES = {
+    "Teal Dark": {
+        "bg":            "#0F1923",
+        "panel":         "#162030",
+        "sidebar":       "#111C28",
+        "accent":        "#1DB8A8",
+        "accent2":       "#F4A633",
+        "text":          "#E8EDF2",
+        "muted":         "#6B7E94",
+        "border":        "#243447",
+        "danger":        "#E05C5C",
+        "success":       "#2ECC71",
+        "btn_primary":   "#1DB8A8",
+        "btn_hover":     "#17A396",
+        "btn_secondary": "#243447",
+        "input_bg":      "#1E2D3D",
+        "input_border":  "#304560",
+        "highlight":     "#1A3B52",
+        "list_sel":      "#1E3A50",
+        "chip_active":   "#172230",
+        "chip_hover":    "#15202D",
+        "status_ns":     "#6B7E94",
+        "status_ip":     "#F4A633",
+        "status_done":   "#2ECC71",
+        "status_na":     "#4A5568",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+    "Cobalt Blue": {
+        "bg":            "#0D1526",
+        "panel":         "#152136",
+        "sidebar":       "#101A2E",
+        "accent":        "#3B82F6",
+        "accent2":       "#F4A633",
+        "text":          "#E7EDF6",
+        "muted":         "#7286A3",
+        "border":        "#26324C",
+        "danger":        "#E05C5C",
+        "success":       "#34D399",
+        "btn_primary":   "#3B82F6",
+        "btn_hover":     "#2E6FD6",
+        "btn_secondary": "#26324C",
+        "input_bg":      "#1A2740",
+        "input_border":  "#31456E",
+        "highlight":     "#1B3458",
+        "list_sel":      "#203A60",
+        "chip_active":   "#16213A",
+        "chip_hover":    "#131E34",
+        "status_ns":     "#7286A3",
+        "status_ip":     "#F4A633",
+        "status_done":   "#34D399",
+        "status_na":     "#46506A",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+    "Forest Green": {
+        "bg":            "#0E1A14",
+        "panel":         "#15261D",
+        "sidebar":       "#101F18",
+        "accent":        "#34C759",
+        "accent2":       "#E8A317",
+        "text":          "#E6F0E9",
+        "muted":         "#6F8A78",
+        "border":        "#243a2e",
+        "danger":        "#E05C5C",
+        "success":       "#34C759",
+        "btn_primary":   "#34C759",
+        "btn_hover":     "#2BB04C",
+        "btn_secondary": "#243A2E",
+        "input_bg":      "#193024",
+        "input_border":  "#2F4D3B",
+        "highlight":     "#1C3F2C",
+        "list_sel":      "#214A33",
+        "chip_active":   "#16271D",
+        "chip_hover":    "#13231A",
+        "status_ns":     "#6F8A78",
+        "status_ip":     "#E8A317",
+        "status_done":   "#34C759",
+        "status_na":     "#48584E",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+    "Crimson Night": {
+        "bg":            "#1A0F12",
+        "panel":         "#28161A",
+        "sidebar":       "#211215",
+        "accent":        "#E5484D",
+        "accent2":       "#F4A633",
+        "text":          "#F2E8EA",
+        "muted":         "#9A7C80",
+        "border":        "#3E2329",
+        "danger":        "#E5484D",
+        "success":       "#2ECC71",
+        "btn_primary":   "#E5484D",
+        "btn_hover":     "#CC3B40",
+        "btn_secondary": "#3E2329",
+        "input_bg":      "#2C181C",
+        "input_border":  "#4A2C32",
+        "highlight":     "#3E1E24",
+        "list_sel":      "#4A2229",
+        "chip_active":   "#26161A",
+        "chip_hover":    "#221316",
+        "status_ns":     "#9A7C80",
+        "status_ip":     "#F4A633",
+        "status_done":   "#2ECC71",
+        "status_na":     "#5A4348",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+    "Amber Dusk": {
+        "bg":            "#1A150D",
+        "panel":         "#281F13",
+        "sidebar":       "#211A10",
+        "accent":        "#F4A633",
+        "accent2":       "#1DB8A8",
+        "text":          "#F2ECE0",
+        "muted":         "#9A8C72",
+        "border":        "#3E3320",
+        "danger":        "#E05C5C",
+        "success":       "#2ECC71",
+        "btn_primary":   "#F4A633",
+        "btn_hover":     "#DB9229",
+        "btn_secondary": "#3E3320",
+        "input_bg":      "#2C2418",
+        "input_border":  "#4A3D26",
+        "highlight":     "#3E3018",
+        "list_sel":      "#4A3A1E",
+        "chip_active":   "#262016",
+        "chip_hover":    "#221C13",
+        "status_ns":     "#9A8C72",
+        "status_ip":     "#F4A633",
+        "status_done":   "#2ECC71",
+        "status_na":     "#585044",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+    "Violet Indigo": {
+        "bg":            "#13101F",
+        "panel":         "#1E1830",
+        "sidebar":       "#181327",
+        "accent":        "#8B5CF6",
+        "accent2":       "#F4A633",
+        "text":          "#ECE8F6",
+        "muted":         "#80749A",
+        "border":        "#322648",
+        "danger":        "#E05C5C",
+        "success":       "#34D399",
+        "btn_primary":   "#8B5CF6",
+        "btn_hover":     "#7A4FE0",
+        "btn_secondary": "#322648",
+        "input_bg":      "#221A38",
+        "input_border":  "#3E315A",
+        "highlight":     "#2E1F50",
+        "list_sel":      "#372560",
+        "chip_active":   "#1D1633",
+        "chip_hover":    "#19132C",
+        "status_ns":     "#80749A",
+        "status_ip":     "#F4A633",
+        "status_done":   "#34D399",
+        "status_na":     "#4E466A",
+        "lock_banner_bg":"#2A1A1E",
+        "lock_banner_fg":"#FFC4CC",
+    },
+}
+
+
+def apply_theme(name):
+    """Replace the active palette in place so existing `C` references stay valid."""
+    t = THEMES.get(name, THEMES["Teal Dark"])
+    C.clear()
+    C.update(t)
+
 
 FONT_TITLE   = ("Segoe UI", 22, "bold")
 FONT_HEADING = ("Segoe UI", 13, "bold")
@@ -3663,44 +3840,45 @@ class EngagementWindow(tk.Toplevel):
         cin     = self._data.get("company_cin", "")
         addr    = self._data.get("company_addr", "")
         firm    = self._eng.get("firm_name", "")
-        cin_line  = f'<p style="margin:2px 0 0;color:#6B7E94;font-size:.78rem">CIN: {html.escape(cin)}</p>' if cin else ""
-        addr_line = f'<p style="margin:2px 0 0;color:#6B7E94;font-size:.78rem">{html.escape(addr)}</p>' if addr else ""
-        firm_line = f'<div style="border-top:1px solid #243447;margin:32px 36px 0;padding:14px 0 20px;text-align:center"><span style="color:#6B7E94;font-size:.9rem">{html.escape(firm)}</span></div>' if firm else ""
+        cin_line  = f'<p style="margin:2px 0 0;color:#444;font-size:.78rem">CIN: {html.escape(cin)}</p>' if cin else ""
+        addr_line = f'<p style="margin:2px 0 0;color:#444;font-size:.78rem">{html.escape(addr)}</p>' if addr else ""
+        firm_line = f'<div style="border-top:1px solid #bbb;margin:32px 36px 0;padding:14px 0 20px;text-align:center"><span style="color:#333;font-size:.9rem">{html.escape(firm)}</span></div>' if firm else ""
         css = """
-        body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#1a2332;margin:0;padding:0}
-        .hdr{background:#0F1923;color:#1DB8A8;padding:18px 36px;display:flex;justify-content:space-between;align-items:flex-end}
-        .hdr h1{margin:0;font-size:1.1rem;font-weight:700}
-        .hdr p{margin:0;font-size:.8rem;color:#6B7E94}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#fff;color:#111;margin:0;padding:0}
+        .hdr{background:#fff;color:#000;padding:20px 36px 16px;border-top:5px solid #000;border-bottom:1.5px solid #000;display:flex;justify-content:space-between;align-items:flex-end}
+        .hdr h1{margin:0;font-size:1.2rem;font-weight:800;letter-spacing:.01em;color:#000}
+        .hdr p{margin:0;font-size:.8rem;color:#444}
+        .hdr-title{font-size:.82rem;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:.08em;text-align:right;border-left:3px solid #000;padding-left:14px;line-height:1.5}
         .content{padding:32px 36px;max-width:960px}
-        h2{font-size:1rem;color:#1DB8A8;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:28px}
-        h3{font-size:.9rem;color:#243447;margin:18px 0 6px}
-        .badge{display:inline-block;padding:3px 10px;border-radius:3px;font-size:.75rem;font-weight:700;margin-left:10px}
-        .b-completed{background:#2ECC71;color:#fff}
-        .b-in-progress{background:#F4A633;color:#fff}
-        .b-not-started{background:#4A6275;color:#fff}
-        .b-na{background:#6B7E94;color:#fff}
-        .b-compliant{background:#2ECC71;color:#fff}
-        .b-non-compliant{background:#E05C5C;color:#fff}
-        .b-not-checked{background:#6B7E94;color:#fff}
-        .obs{background:#f7f9fc;border-left:3px solid #1DB8A8;padding:12px 16px;white-space:pre-wrap;font-size:.9rem;line-height:1.6}
-        .proc{background:#f7f9fc;border-left:3px solid #F4A633;padding:12px 16px;white-space:pre-wrap;font-size:.9rem;line-height:1.6}
+        h2{font-size:.82rem;color:#000;border-bottom:1.5px solid #000;padding-bottom:4px;margin-top:28px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+        h3{font-size:.9rem;color:#111;margin:18px 0 6px;font-weight:600}
+        .badge{display:inline-block;padding:2px 9px;border-radius:2px;font-size:.72rem;font-weight:700;margin-left:8px;border:1.5px solid #000}
+        .b-completed{background:#000;color:#fff;border-color:#000}
+        .b-in-progress{background:#777;color:#fff;border-color:#777}
+        .b-not-started{background:#fff;color:#000;border-color:#000}
+        .b-na{background:#ccc;color:#333;border-color:#ccc}
+        .b-compliant{background:#000;color:#fff;border-color:#000}
+        .b-non-compliant{background:#fff;color:#000;border-color:#000}
+        .b-not-checked{background:#ccc;color:#333;border-color:#ccc}
+        .obs{background:#f5f5f5;border-left:3px solid #000;padding:12px 16px;white-space:pre-wrap;font-size:.9rem;line-height:1.6}
+        .proc{background:#f5f5f5;border-left:3px solid #555;padding:12px 16px;white-space:pre-wrap;font-size:.9rem;line-height:1.6}
         .files ul{list-style:none;padding:0;margin:0}
-        .files li{padding:4px 0;font-size:.85rem;border-bottom:1px solid #eee}
+        .files li{padding:4px 0;font-size:.85rem;border-bottom:1px solid #ddd}
         table{width:100%;border-collapse:collapse;font-size:.88rem}
-        th{background:#162030;color:#1DB8A8;padding:8px 10px;text-align:left}
-        td{padding:7px 10px;border-bottom:1px solid #e2e8f0}
-        tr.total td{background:#e8f0fe;font-weight:700}
-        tr.section-hdr td{background:#f1f5f9;color:#6B7E94;font-size:.78rem;font-weight:700;padding:5px 10px}
-        .pos{color:#2ECC71;font-weight:700} .neg{color:#E05C5C;font-weight:700}
-        @media print{body{margin:0} .hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        th{background:#111;color:#fff;padding:8px 10px;text-align:left;font-weight:700}
+        td{padding:7px 10px;border-bottom:1px solid #ddd}
+        tr.total td{background:#efefef;font-weight:700}
+        tr.section-hdr td{background:#e8e8e8;color:#333;font-size:.78rem;font-weight:700;padding:5px 10px}
+        .pos{font-weight:700} .neg{font-weight:700;text-decoration:underline}
+        @media print{body{margin:0}}
         """
         full_html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8">
 <title>{html.escape(title)}</title>
 <style>{css}</style></head><body>
 <div class="hdr">
-  <div><h1>{html.escape(company)}</h1>{cin_line}{addr_line}<p style="margin:4px 0 0;color:#6B7E94;font-size:.78rem">{html.escape(label)}</p></div>
-  <div style="text-align:right"><p style="color:#1DB8A8;font-weight:700">{html.escape(title)}</p></div>
+  <div><h1>{html.escape(company)}</h1>{cin_line}{addr_line}<p style="margin:4px 0 0;color:#444;font-size:.78rem">{html.escape(label)}</p></div>
+  <div style="display:flex;align-items:flex-end"><p class="hdr-title">{html.escape(title)}</p></div>
 </div>
 <div class="content">{body_html}</div>
 {firm_line}
@@ -8499,8 +8677,17 @@ class HomeScreen(tk.Frame):
 
 class App:
     RECENT = os.path.join(os.path.expanduser("~"), ".pna_recent.json")
+    PREFS  = os.path.join(os.path.expanduser("~"), ".pna_prefs.json")
 
     def __init__(self):
+        # Load and apply the saved theme before any widgets are built so the
+        # palette (C) is correct for every widget created below.
+        prefs = self._load_prefs()
+        self._theme_name = prefs.get("theme", "Teal Dark")
+        if self._theme_name not in THEMES:
+            self._theme_name = "Teal Dark"
+        apply_theme(self._theme_name)
+
         self.root = tk.Tk()
         self.root.title(APP_NAME)
         self.root.geometry("1080x680")
@@ -8509,6 +8696,10 @@ class App:
         _setup_ttk_styles(self.root)
         self._recent = self._load_recent()
         self._panel  = None
+        # Current detail context, used to rebuild the window on theme switch.
+        self._cur_data = None
+        self._cur_fp   = None
+        self._theme_var = tk.StringVar(value=self._theme_name)
         self._setup_menu()
         self._show_home()
 
@@ -8525,6 +8716,16 @@ class App:
         fm.add_separator()
         fm.add_command(label="Exit", command=self._on_exit)
         mb.add_cascade(label="File", menu=fm)
+        vm = tk.Menu(mb, tearoff=0, bg=C["sidebar"], fg=C["text"],
+                     activebackground=C["highlight"], activeforeground=C["text"])
+        tm = tk.Menu(vm, tearoff=0, bg=C["sidebar"], fg=C["text"],
+                     activebackground=C["highlight"], activeforeground=C["text"])
+        for name in THEMES:
+            tm.add_radiobutton(label=name, value=name,
+                               variable=self._theme_var,
+                               command=lambda n=name: self._switch_theme(n))
+        vm.add_cascade(label="Theme", menu=tm)
+        mb.add_cascade(label="View", menu=vm)
         hm = tk.Menu(mb, tearoff=0, bg=C["sidebar"], fg=C["text"],
                      activebackground=C["highlight"], activeforeground=C["text"])
         hm.add_command(label="About", command=self._about)
@@ -8540,6 +8741,8 @@ class App:
 
     def _show_home(self):
         self._clear()
+        self._cur_data = None
+        self._cur_fp   = None
         h = HomeScreen(self.root, on_new=self._new,
                        on_open=self._open, recent=self._recent)
         h.pack(fill="both", expand=True)
@@ -8548,6 +8751,8 @@ class App:
 
     def _show_detail(self, data, fp):
         self._clear()
+        self._cur_data = data
+        self._cur_fp   = fp
         d = DetailPanel(self.root, data, fp,
                         on_save=self._on_save,
                         on_close=self._show_home)
@@ -8615,6 +8820,44 @@ class App:
     def _on_save(self, fp, data):
         self._push_recent(fp, data)
         self.root.title(f"{data.get('company_name','Untitled')} — {APP_NAME}")
+
+    def _load_prefs(self):
+        """Read ~/.pna_prefs.json; return {} if missing or corrupt."""
+        try:
+            if os.path.exists(self.PREFS):
+                with open(self.PREFS, "r", encoding="utf-8") as f:
+                    prefs = json.load(f)
+                if isinstance(prefs, dict):
+                    return prefs
+        except Exception:
+            pass
+        return {}
+
+    def _save_prefs(self, prefs):
+        """Persist the prefs dict to ~/.pna_prefs.json."""
+        try:
+            with open(self.PREFS, "w", encoding="utf-8") as f:
+                json.dump(prefs, f, indent=2, ensure_ascii=False)
+        except Exception:
+            pass
+
+    def _switch_theme(self, name):
+        """Apply a theme, persist it, refresh ttk styles, and rebuild the window."""
+        apply_theme(name)
+        self._theme_name = name
+        self._theme_var.set(name)
+        prefs = self._load_prefs()
+        prefs["theme"] = name
+        self._save_prefs(prefs)
+        # Rebuild the menu and ttk styles so the new palette takes effect, then
+        # rebuild whichever panel is currently showing.
+        _setup_ttk_styles(self.root)
+        self.root.configure(bg=C["bg"])
+        self._setup_menu()
+        if self._cur_data is not None:
+            self._show_detail(self._cur_data, self._cur_fp)
+        else:
+            self._show_home()
 
     def _load_recent(self):
         try:

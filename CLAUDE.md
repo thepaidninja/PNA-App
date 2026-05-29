@@ -13,15 +13,15 @@ Guidance for Claude Code when working in this repository.
 | **Distribution** | PyInstaller → standalone `.exe` |
 | **File format** | `.caf` — encrypted JSON (v0.5.9+) |
 | **Architecture** | Monolithic single-file (`audit_pro v{VERSION}.py`) |
-| **Current file** | `audit_pro v0.6.1.py` (~8935 lines) |
-| **APP_VERSION** | `"0.6.1"` |
+| **Current file** | `audit_pro v0.6.2.py` (~8985 lines) |
+| **APP_VERSION** | `"0.6.2"` |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `audit_pro v0.6.1.py` | Main application — current working file |
-| `audit_pro v0.6.0.py` | Previous release |
+| `audit_pro v0.6.2.py` | Main application — current working file |
+| `audit_pro v0.6.1.py` | Previous release |
 | `Pai Nayak and Associates.spec` | PyInstaller build spec |
 | `.github/workflows/build-release.yml` | CI/CD release workflow |
 | `Manipal_Technologies_limited.caf` | Sample audit file |
@@ -30,7 +30,7 @@ Guidance for Claude Code when working in this repository.
 
 ```powershell
 # Python is NOT on PATH — use full path
-& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.1.py"
+& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.2.py"
 ```
 
 ## Essential Mental Model

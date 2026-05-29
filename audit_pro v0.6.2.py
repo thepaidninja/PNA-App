@@ -23,7 +23,7 @@ from datetime import datetime
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 APP_NAME        = "Pai Nayak & Associates"
-APP_VERSION     = "0.6.1"
+APP_VERSION     = "0.6.2"
 FILE_EXT             = ".pna"
 FILE_EXT_DESC        = "PNA Audit File"
 LEGACY_FILE_EXT      = ".caf"

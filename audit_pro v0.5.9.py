@@ -1,6 +1,6 @@
 """
 Pai Nayak & Associates - Audit Management Software
-Custom file extension: .caf (Company Audit File)
+Custom file extension: .cafe (Company Audit File Encrypted)
 Fully offline Windows desktop application
 """
 
@@ -23,9 +23,9 @@ from datetime import datetime
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 APP_NAME        = "Pai Nayak & Associates"
-APP_VERSION     = "0.5.9"
-FILE_EXT        = ".caf"
-FILE_EXT_DESC   = "Company Audit File"
+APP_VERSION     = "0.6.0"
+FILE_EXT        = ".cafe"
+FILE_EXT_DESC   = "Company Audit File Encrypted"
 AUDIT_TYPES     = ["Statutory Audit", "Tax Audit"]
 FINANCIAL_YEARS = [
     "FY 2024-25", "FY 2025-26", "FY 2026-27",
@@ -53,49 +53,64 @@ def _load_firm_logo(width=460, height=82):
         s  = max(1, min(sx, sy))
         return photo.subsample(s, s)
 
-# ── .caf File Encryption ──────────────────────────────────────────────────────
+# ── .cafe File Encryption ──────────────────────────────────────────────────────
 # XOR cipher with a SHA-256 derived key + zlib compression + base64 encoding.
-# Files written by v0.5.9+ start with _CAF_MAGIC; older plain-JSON files are
+# Files written by v0.5.9+ start with _CAFE_MAGIC; older plain-JSON files are
 # detected automatically and loaded without decryption (backwards compatible).
 
-_CAF_MAGIC  = b"PNAENC1:"
-_CAF_PHRASE = b"PaiNayakAndAssociates_CAF_v1"
+_CAFE_MAGIC  = b"PNAENC1:"
+_CAFE_PHRASE = b"PaiNayakAndAssociates_CAFE_v1"
 
-def _caf_key():
-    return hashlib.sha256(_CAF_PHRASE).digest()   # 32-byte repeating key
+def _cafe_key():
+    return hashlib.sha256(_CAFE_PHRASE).digest()   # 32-byte repeating key
 
-def _caf_encrypt(json_str: str) -> bytes:
+def _cafe_encrypt(json_str: str) -> bytes:
     raw = zlib.compress(json_str.encode("utf-8"), level=6)
-    key = _caf_key()
+    key = _cafe_key()
     enc = bytes(b ^ key[i % 32] for i, b in enumerate(raw))
-    return _CAF_MAGIC + base64.b64encode(enc) + b"\n"
+    return _CAFE_MAGIC + base64.b64encode(enc) + b"\n"
 
-def _caf_decrypt(raw: bytes) -> str:
-    b64 = raw[len(_CAF_MAGIC):].strip()
+def _cafe_decrypt(raw: bytes) -> str:
+    b64 = raw[len(_CAFE_MAGIC):].strip()
     enc = base64.b64decode(b64)
-    key = _caf_key()
+    key = _cafe_key()
     dec = bytes(b ^ key[i % 32] for i, b in enumerate(enc))
     return zlib.decompress(dec).decode("utf-8")
 
-def _caf_is_encrypted(filepath: str) -> bool:
+def _cafe_is_encrypted(filepath: str) -> bool:
+    # Only treat .cafe files as encrypted
+    if not filepath.lower().endswith(".cafe"):
+        return False
     try:
         with open(filepath, "rb") as f:
-            head = f.read(len(_CAF_MAGIC) + 16).lstrip()
-        return head.startswith(_CAF_MAGIC)
+            head = f.read(len(_CAFE_MAGIC) + 16).lstrip()
+        return head.startswith(_CAFE_MAGIC)
     except Exception:
         return False
 
-def _caf_load(filepath: str) -> dict:
+def _cafe_load(filepath: str) -> dict:
+    # Only allow loading encrypted .cafe files
+    if not filepath.lower().endswith(".cafe"):
+        raise ValueError("Only .cafe files are supported.")
     with open(filepath, "rb") as f:
         raw = f.read().lstrip()
-    if raw.startswith(_CAF_MAGIC):
-        return json.loads(_caf_decrypt(raw))
-    return json.loads(raw.decode("utf-8"))   # legacy plain-JSON
+    if raw.startswith(_CAFE_MAGIC):
+        return json.loads(_cafe_decrypt(raw))
+    raise ValueError("File is not a valid encrypted .cafe file.")
 
-def _caf_save(filepath: str, data: dict) -> None:
+
+def _cafe_save(filepath: str, data: dict) -> None:
+    # Only allow saving as encrypted .cafe files
+    if not filepath.lower().endswith(".cafe"):
+        raise ValueError("Only .cafe files are supported.")
     json_str = json.dumps(data, indent=2, ensure_ascii=False)
     with open(filepath, "wb") as f:
-        f.write(_caf_encrypt(json_str))
+        f.write(_cafe_encrypt(json_str))
+    # Optionally, make file read-only (uneditable) at OS level
+    try:
+        os.chmod(filepath, 0o444)
+    except Exception:
+        pass
 
 # ── Engagement Lock Passwords ────────────────────────────────────────────────
 MASTER_PASSWORD = "PAINAYAK2000"
@@ -115,9 +130,6 @@ def _verify_password(password: str, eng) -> bool:
     if not stored:
         return True   # legacy: no password set, allow unlock
     return _hash_password(password, eng.get("id", "")) == stored
-
-
-
 
 
 # ── Balance Sheet Line Items (Schedule III, India) ────────────────────────────
@@ -3334,7 +3346,7 @@ class DeleteEngagementDialog(tk.Toplevel):
                  ).pack(anchor="w", pady=(3, 12))
         warn = tk.Frame(body, bg="#2A1A1E", padx=12, pady=8)
         warn.pack(fill="x")
-        tk.Label(warn, text="All data will be removed from the .caf file.\n"
+        tk.Label(warn, text="All data will be removed from the .cafe file.\n"
                              "Files on disk are NOT auto-deleted.",
                  bg="#2A1A1E", fg="#FFC4CC", font=FONT_SMALL,
                  justify="left").pack(anchor="w")
@@ -7662,7 +7674,7 @@ class EngagementWindow(tk.Toplevel):
 # ══════════════════════════════════════════════════════════════════════════════
 
 class DetailPanel(tk.Frame):
-    """Company dashboard — shown when a .caf file is open."""
+    """Company dashboard — shown when a .cafe file is open."""
 
     def __init__(self, parent, data, filepath, on_save, on_close):
         super().__init__(parent, bg=C["bg"])
@@ -8479,7 +8491,7 @@ class DetailPanel(tk.Frame):
                 return
 
         try:
-            _caf_save(self._filepath, self._data)
+            _cafe_save(self._filepath, self._data)
             self._dirty = False
             self._save_btn.config(text="💾  Save")
             self._file_lbl.config(text=os.path.basename(self._filepath))
@@ -8683,7 +8695,7 @@ class App:
         if not fp:
             return
         try:
-            _caf_save(fp, data)
+            _cafe_save(fp, data)
         except Exception as ex:
             messagebox.showerror("Error", str(ex)); return
         self._push_recent(fp, data)
@@ -8698,7 +8710,7 @@ class App:
             return
         if not os.path.exists(filepath):
             messagebox.showerror("Not Found", f"File not found:\n{filepath}"); return
-        is_legacy = not _caf_is_encrypted(filepath)
+        is_legacy = not _cafe_is_encrypted(filepath)
         if is_legacy:
             choice = messagebox.askyesnocancel(
                 "Unencrypted File",
@@ -8713,13 +8725,13 @@ class App:
             if choice is None:
                 return
         try:
-            data = _caf_load(filepath)
+            data = _cafe_load(filepath)
         except Exception as ex:
             messagebox.showerror("Error", str(ex)); return
         data = migrate(data)
         if is_legacy and choice:
             try:
-                _caf_save(filepath, data)
+                _cafe_save(filepath, data)
             except Exception as ex:
                 messagebox.showerror("Upgrade Failed",
                     f"Could not re-save the file as encrypted:\n{ex}",

@@ -12,26 +12,44 @@ Guidance for Claude Code when working in this repository.
 | **UI** | tkinter + ttk |
 | **Distribution** | PyInstaller → standalone `.exe` |
 | **File format** | `.pna` — encrypted JSON (v0.6.2+); `.caf` legacy files supported |
-| **Architecture** | Monolithic single-file (`audit_pro v{VERSION}.py`) |
-| **Current file** | `audit_pro v0.6.3.py` (~7946 lines) |
-| **APP_VERSION** | `"0.6.3"` |
+| **Architecture** | Package (`audit_pro/`) with thin launcher `audit_pro v{VERSION}.py` |
+| **Current file** | `audit_pro v0.6.4.py` (launcher) + `audit_pro/` package |
+| **APP_VERSION** | `"0.6.4"` |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `audit_pro v0.6.3.py` | Main application — current working file |
-| `audit_pro v0.6.2.py` | Previous release |
+| `audit_pro v0.6.4.py` | Thin launcher — `from audit_pro.app import main` |
+| `audit_pro/constants.py` | APP_VERSION, FINANCIAL_YEARS, FIRM_LOGO_B64, fonts |
+| `audit_pro/crypto.py` | Encryption/decryption, `_caf_load/_save`, password hashing |
+| `audit_pro/themes.py` | THEMES dict, global `C` palette, `apply_theme` |
+| `audit_pro/data_model.py` | Clause catalogs, `make_engagement`, `migrate`, `get_process_note` |
+| `audit_pro/ui_utils.py` | `styled_button`, `styled_entry`, `_setup_ttk_styles`, `bind_tree` |
+| `audit_pro/dialogs.py` | NewFileDialog, EngagementDialog, DeleteEngagementDialog, PasswordDialog |
+| `audit_pro/engagement_window.py` | EngagementWindow class |
+| `audit_pro/detail_panel.py` | DetailPanel class |
+| `audit_pro/home_screen.py` | HomeScreen class |
+| `audit_pro/app.py` | App class + `main()` entry point |
 | `Pai Nayak and Associates.spec` | PyInstaller build spec |
 | `.github/workflows/build-release.yml` | CI/CD release workflow |
-| `Manipal_Technologies_limited.pna` | Sample audit file |
 
 ## Run Locally
 
 ```powershell
 # Python is NOT on PATH — use full path
-& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.3.py"
+& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.4.py"
 ```
+
+## Package Import Order (no circular imports)
+
+```
+constants → crypto → themes → data_model → ui_utils → dialogs
+         → engagement_window → detail_panel → home_screen → app
+```
+
+The global `C` dict (active theme palette) lives in `themes.py`.  
+Import it as: `from audit_pro.themes import C`
 
 ## Essential Mental Model
 
@@ -63,10 +81,10 @@ Persisted in `~/.pna_prefs.json`. Switched via **View > Theme** menu.
 
 ## Adding a New Feature — Checklist
 
-- New engagement field → `make_engagement()` + `migrate()` fallback
+- New engagement field → `make_engagement()` + `migrate()` fallback in `data_model.py`
 - New regulatory version → update `*_VERSION_BY_FY` map + register in `*_VERSIONS` dict
-- New theme → add entry to `THEMES` dict (auto-appears in menu)
-- New FY → add to `FINANCIAL_YEARS` + all four `*_VERSION_BY_FY` maps
+- New theme → add entry to `THEMES` dict in `themes.py` (auto-appears in menu)
+- New FY → add to `FINANCIAL_YEARS` in `constants.py` + all four `*_VERSION_BY_FY` maps in `data_model.py`
 
 ---
 

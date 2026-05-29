@@ -8,3 +8,15 @@ audit_pro v*_dev.py
 
 # Company data files
 *.caf
+*.pna
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Backup files
+*.bak.py
+
+# Claude Code settings
+.claude/

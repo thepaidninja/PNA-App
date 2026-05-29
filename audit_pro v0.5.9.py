@@ -6,7 +6,9 @@ Fully offline Windows desktop application
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import base64
 import copy
+import hashlib
 import json
 import os
 import re
@@ -15,12 +17,13 @@ import subprocess
 import sys
 import tempfile
 import webbrowser
+import zlib
 import html
 from datetime import datetime
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 APP_NAME        = "Pai Nayak & Associates"
-APP_VERSION     = "0.5.8"
+APP_VERSION     = "0.5.9"
 FILE_EXT        = ".caf"
 FILE_EXT_DESC   = "Company Audit File"
 AUDIT_TYPES     = ["Statutory Audit", "Tax Audit"]
@@ -49,6 +52,69 @@ def _load_firm_logo(width=460, height=82):
         sy = max(1, photo.height() // height)
         s  = max(1, min(sx, sy))
         return photo.subsample(s, s)
+
+# ── .caf File Encryption ──────────────────────────────────────────────────────
+# XOR cipher with a SHA-256 derived key + zlib compression + base64 encoding.
+# Files written by v0.5.9+ start with _CAF_MAGIC; older plain-JSON files are
+# detected automatically and loaded without decryption (backwards compatible).
+
+_CAF_MAGIC  = b"PNAENC1:"
+_CAF_PHRASE = b"PaiNayakAndAssociates_CAF_v1"
+
+def _caf_key():
+    return hashlib.sha256(_CAF_PHRASE).digest()   # 32-byte repeating key
+
+def _caf_encrypt(json_str: str) -> bytes:
+    raw = zlib.compress(json_str.encode("utf-8"), level=6)
+    key = _caf_key()
+    enc = bytes(b ^ key[i % 32] for i, b in enumerate(raw))
+    return _CAF_MAGIC + base64.b64encode(enc) + b"\n"
+
+def _caf_decrypt(raw: bytes) -> str:
+    b64 = raw[len(_CAF_MAGIC):].strip()
+    enc = base64.b64decode(b64)
+    key = _caf_key()
+    dec = bytes(b ^ key[i % 32] for i, b in enumerate(enc))
+    return zlib.decompress(dec).decode("utf-8")
+
+def _caf_is_encrypted(filepath: str) -> bool:
+    try:
+        with open(filepath, "rb") as f:
+            head = f.read(len(_CAF_MAGIC) + 16).lstrip()
+        return head.startswith(_CAF_MAGIC)
+    except Exception:
+        return False
+
+def _caf_load(filepath: str) -> dict:
+    with open(filepath, "rb") as f:
+        raw = f.read().lstrip()
+    if raw.startswith(_CAF_MAGIC):
+        return json.loads(_caf_decrypt(raw))
+    return json.loads(raw.decode("utf-8"))   # legacy plain-JSON
+
+def _caf_save(filepath: str, data: dict) -> None:
+    json_str = json.dumps(data, indent=2, ensure_ascii=False)
+    with open(filepath, "wb") as f:
+        f.write(_caf_encrypt(json_str))
+
+# ── Engagement Lock Passwords ────────────────────────────────────────────────
+MASTER_PASSWORD = "PAINAYAK2000"
+_PW_SALT = b"pna_caf_lock_v1"
+
+def _hash_password(password: str, eng_id: str = "") -> str:
+    h = hashlib.sha256()
+    h.update(_PW_SALT)
+    h.update(eng_id.encode("utf-8"))
+    h.update(password.encode("utf-8"))
+    return h.hexdigest()
+
+def _verify_password(password: str, eng) -> bool:
+    if password == MASTER_PASSWORD:
+        return True
+    stored = eng.get("lock_password_hash")
+    if not stored:
+        return True   # legacy: no password set, allow unlock
+    return _hash_password(password, eng.get("id", "")) == stored
 
 
 
@@ -3306,6 +3372,133 @@ class DeleteEngagementDialog(tk.Toplevel):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Password Dialog  (for locking / unlocking engagements)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class PasswordDialog(tk.Toplevel):
+    """
+    Modal dialog for setting or verifying an engagement lock password.
+
+    mode = "set"    -> two fields (password + confirm); returns the new password
+    mode = "verify" -> one field; returns the password the user typed
+    self.result is the entered password on success, or None if cancelled.
+    """
+    def __init__(self, parent, mode, eng_label_text=""):
+        super().__init__(parent)
+        self.result = None
+        self._mode = mode
+        self._eng_label = eng_label_text
+        is_set = (mode == "set")
+        self.title("Lock Engagement" if is_set else "Unlock Engagement")
+        self.configure(bg=C["bg"])
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        h = 320 if is_set else 260
+        self.geometry(f"440x{h}")
+        self._center(parent, 440, h)
+        self._build()
+        self.bind("<Return>", lambda e: self._submit())
+        self.bind("<Escape>", lambda e: self._cancel())
+        self.wait_window()
+
+    def _center(self, p, w, h):
+        self.update_idletasks()
+        x = p.winfo_x() + p.winfo_width()//2 - w//2
+        y = p.winfo_y() + p.winfo_height()//2 - h//2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+    def _build(self):
+        is_set = (self._mode == "set")
+        accent = C["accent2"] if is_set else C["accent"]
+        tk.Frame(self, bg=accent, height=5).pack(fill="x")
+
+        icon = "🔒" if is_set else "🔓"
+        title = "Lock Engagement" if is_set else "Unlock Engagement"
+        tk.Label(self, text=f"{icon}  {title}", bg=C["bg"], fg=accent,
+                 font=("Segoe UI", 13, "bold")).pack(pady=(18, 2))
+        subtitle = ("Set a password to protect this engagement"
+                    if is_set else
+                    "Enter the password to unlock this engagement")
+        tk.Label(self, text=subtitle, bg=C["bg"], fg=C["muted"],
+                 font=FONT_SMALL).pack()
+
+        if self._eng_label:
+            tk.Label(self, text=self._eng_label, bg=C["bg"], fg=C["text"],
+                     font=("Segoe UI", 9, "italic")).pack(pady=(4, 0))
+
+        tk.Frame(self, height=1, bg=C["border"]).pack(fill="x", pady=12)
+
+        body = tk.Frame(self, bg=C["bg"], padx=28)
+        body.pack(fill="both", expand=True)
+
+        tk.Label(body, text="Password", bg=C["bg"], fg=C["muted"],
+                 font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        self._pw1 = tk.Entry(body, show="•",
+            bg=C["input_bg"], fg=C["text"], insertbackground=C["accent"],
+            relief="flat", font=FONT_BODY, highlightthickness=1,
+            highlightbackground=C["input_border"], highlightcolor=C["accent"])
+        self._pw1.pack(fill="x", ipady=6, pady=(2, 8))
+
+        if is_set:
+            tk.Label(body, text="Confirm Password", bg=C["bg"], fg=C["muted"],
+                     font=("Segoe UI", 9, "bold")).pack(anchor="w")
+            self._pw2 = tk.Entry(body, show="•",
+                bg=C["input_bg"], fg=C["text"], insertbackground=C["accent"],
+                relief="flat", font=FONT_BODY, highlightthickness=1,
+                highlightbackground=C["input_border"], highlightcolor=C["accent"])
+            self._pw2.pack(fill="x", ipady=6, pady=(2, 8))
+
+        self._err = tk.Label(body, text="", bg=C["bg"], fg=C["danger"],
+                             font=FONT_SMALL)
+        self._err.pack(anchor="w", pady=(2, 0))
+
+        bar = tk.Frame(self, bg=C["bg"], padx=28, pady=14)
+        bar.pack(fill="x", side="bottom")
+        cancel = tk.Button(bar, text="Cancel",
+            bg=C["btn_secondary"], fg=C["text"],
+            activebackground=C["border"], font=FONT_LABEL,
+            relief="flat", cursor="hand2", padx=14, pady=7, bd=0,
+            command=self._cancel)
+        cancel.pack(side="right")
+        cancel.bind("<Enter>", lambda e: cancel.config(bg=C["border"]))
+        cancel.bind("<Leave>", lambda e: cancel.config(bg=C["btn_secondary"]))
+        ok_text = "Lock  🔒" if is_set else "Unlock  🔓"
+        ok = tk.Button(bar, text=ok_text,
+            bg=accent, fg=C["bg"],
+            activebackground=C["btn_hover"], font=FONT_LABEL,
+            relief="flat", cursor="hand2", padx=14, pady=7, bd=0,
+            command=self._submit)
+        ok.pack(side="right", padx=(0, 8))
+        ok.bind("<Enter>", lambda e: ok.config(bg=C["btn_hover"]))
+        ok.bind("<Leave>", lambda e: ok.config(bg=accent))
+
+        self.after(50, self._pw1.focus_set)
+
+    def _submit(self):
+        pw1 = self._pw1.get()
+        if not pw1:
+            self._err.config(text="Password cannot be empty.")
+            return
+        if self._mode == "set":
+            pw2 = self._pw2.get()
+            if pw1 != pw2:
+                self._err.config(text="Passwords do not match.")
+                self._pw2.delete(0, "end")
+                self._pw2.focus_set()
+                return
+            if len(pw1) < 4:
+                self._err.config(text="Password must be at least 4 characters.")
+                return
+        self.result = pw1
+        self.destroy()
+
+    def _cancel(self):
+        self.result = None
+        self.destroy()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Engagement Window  (Toplevel with all working tabs)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -3403,17 +3596,23 @@ class EngagementWindow(tk.Toplevel):
     def _toggle_lock_from_window(self):
         """Lock or unlock from inside the engagement window, then reopen."""
         is_locked = self._eng.get("locked", False)
+        label = eng_label(self._eng)
         if is_locked:
-            if not messagebox.askyesno("Unlock Engagement",
-                    "Unlock this engagement?\nIt will become editable again.",
-                    parent=self):
+            dlg = PasswordDialog(self, mode="verify", eng_label_text=label)
+            if dlg.result is None:
+                return
+            if not _verify_password(dlg.result, self._eng):
+                messagebox.showerror("Incorrect Password",
+                    "The password you entered is incorrect.", parent=self)
                 return
             self._eng["locked"] = False
+            self._eng.pop("lock_password_hash", None)
         else:
-            if not messagebox.askyesno("Lock Engagement",
-                    "Lock this engagement?\nAll fields will become read-only until unlocked.",
-                    parent=self):
+            dlg = PasswordDialog(self, mode="set", eng_label_text=label)
+            if dlg.result is None:
                 return
+            self._eng["lock_password_hash"] = _hash_password(
+                dlg.result, self._eng.get("id", ""))
             self._eng["locked"] = True
         self._panel._mark_dirty()
         self._panel._invalidate_cache(self._eng.get("id"))
@@ -8178,17 +8377,24 @@ class DetailPanel(tk.Frame):
         eng = next((e for e in self._data["engagements"] if e["id"] == eid), None)
         if not eng:
             return
+        parent = self.winfo_toplevel()
+        label = eng_label(eng)
         if eng.get("locked"):
-            if not messagebox.askyesno("Unlock Engagement",
-                    f"Unlock this engagement?\n\n{eng_label(eng)}\n\nIt will become editable again.",
-                    parent=self.winfo_toplevel()):
+            dlg = PasswordDialog(parent, mode="verify", eng_label_text=label)
+            if dlg.result is None:
+                return
+            if not _verify_password(dlg.result, eng):
+                messagebox.showerror("Incorrect Password",
+                    "The password you entered is incorrect.", parent=parent)
                 return
             eng["locked"] = False
+            eng.pop("lock_password_hash", None)
         else:
-            if not messagebox.askyesno("Lock Engagement",
-                    f"Lock this engagement?\n\n{eng_label(eng)}\n\nAll fields become read-only.",
-                    parent=self.winfo_toplevel()):
+            dlg = PasswordDialog(parent, mode="set", eng_label_text=label)
+            if dlg.result is None:
                 return
+            eng["lock_password_hash"] = _hash_password(
+                dlg.result, eng.get("id", ""))
             eng["locked"] = True
         self._invalidate_cache(eid)
         self._mark_dirty()
@@ -8273,8 +8479,7 @@ class DetailPanel(tk.Frame):
                 return
 
         try:
-            with open(self._filepath, "w", encoding="utf-8") as f:
-                json.dump(self._data, f, indent=2, ensure_ascii=False)
+            _caf_save(self._filepath, self._data)
             self._dirty = False
             self._save_btn.config(text="💾  Save")
             self._file_lbl.config(text=os.path.basename(self._filepath))
@@ -8478,8 +8683,7 @@ class App:
         if not fp:
             return
         try:
-            with open(fp, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            _caf_save(fp, data)
         except Exception as ex:
             messagebox.showerror("Error", str(ex)); return
         self._push_recent(fp, data)
@@ -8494,12 +8698,32 @@ class App:
             return
         if not os.path.exists(filepath):
             messagebox.showerror("Not Found", f"File not found:\n{filepath}"); return
+        is_legacy = not _caf_is_encrypted(filepath)
+        if is_legacy:
+            choice = messagebox.askyesnocancel(
+                "Unencrypted File",
+                "This file is in the legacy plain-text format and is not "
+                "encrypted. Its contents can be read by anyone with file "
+                "access.\n\n"
+                "Do you want to upgrade it to the encrypted format?\n\n"
+                "• Yes — open and re-save as encrypted\n"
+                "• No — open as-is (stays unencrypted)\n"
+                "• Cancel — don't open",
+                parent=self.root, icon="warning")
+            if choice is None:
+                return
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = _caf_load(filepath)
         except Exception as ex:
             messagebox.showerror("Error", str(ex)); return
         data = migrate(data)
+        if is_legacy and choice:
+            try:
+                _caf_save(filepath, data)
+            except Exception as ex:
+                messagebox.showerror("Upgrade Failed",
+                    f"Could not re-save the file as encrypted:\n{ex}",
+                    parent=self.root)
         self._push_recent(filepath, data)
         self._show_detail(data, filepath)
 

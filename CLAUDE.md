@@ -12,14 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Distribution**: PyInstaller (builds to standalone .exe for Windows)
 - **File Format**: Custom `.caf` — encrypted as of v0.5.9 (compressed + XOR-ciphered JSON; legacy plain-JSON files still load, see [.caf File Format & Encryption](#caf-file-format--encryption))
 - **Architecture**: Monolithic single-file application (audit_pro v{VERSION}.py)
-- **Current version**: 0.5.9 (`APP_VERSION` at line 26 of `audit_pro v0.5.9.py`)
+- **Current version**: 0.6.0 (`APP_VERSION` at line 26 of `audit_pro v0.6.0.py`) — v0.6.0 redesigned the post-open dashboard cards: removed progress bars / "% complete" / status-chip strips in favour of a clean, spacious, FY-led card
 
 ## Architecture & Data Flow
 
 ### Core Components
 
 #### 1. **Main Application Class (App)**
-- Located at line 8615 in `audit_pro v0.5.9.py`
+- Located at line 8500 in `audit_pro v0.6.0.py`
 - Manages the main tkinter window, menu bar, and panel lifecycle
 - Handles file I/O (open/new files), recent files tracking
 - Routes between `HomeScreen` and `DetailPanel`
@@ -78,7 +78,7 @@ See [.caf File Format & Encryption](#caf-file-format--encryption) for details.
 
 #### 3. **UI Layers**
 
-**HomeScreen** (line 8498)
+**HomeScreen** (line 8383)
 - Welcome screen with recent files list
 - New/Open file buttons
 - Displays firm logo (base64-encoded PNG)
@@ -177,7 +177,7 @@ Two security features were added in v0.5.9. Both are backward compatible with fi
 
 ### .caf File Format & Encryption
 
-Defined at the top of the source file (`audit_pro v0.5.9.py`, lines ~56–96). `.caf` files are no longer plain JSON on disk — they are obfuscated to keep audit data from being casually read:
+Defined at the top of the source file (`audit_pro v0.6.0.py`, lines ~56–96). `.caf` files are no longer plain JSON on disk — they are obfuscated to keep audit data from being casually read:
 
 - **Pipeline**: `json.dumps` → `zlib.compress(level=6)` → XOR cipher with a 32-byte SHA-256-derived key → base64 → written as bytes with the magic prefix `PNAENC1:` and a trailing newline.
 - **Key**: `_caf_key()` returns `sha256(b"PaiNayakAndAssociates_CAF_v1")`. The phrase is hard-coded in the binary, so this is obfuscation against casual inspection, **not** strong cryptography (the key ships with the app, and XOR with a repeating key is not secure).
@@ -201,8 +201,14 @@ Defined alongside the encryption helpers (lines ~98–116). Locking an engagemen
 ## Build & Release
 
 ### Development
-1. **Run locally**: `python "audit_pro v0.5.9.py"`
-2. **Install dependencies**: `pip install pyinstaller pillow`
+
+> **Python interpreter (this machine)**: `python`/`py` are **not** on PATH. Use the full path:
+> `C:\Users\hp\AppData\Local\Python\bin\python.exe` (Python 3.14.5).
+> Examples — run: `& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.0.py"`;
+> syntax-check: `& "C:\Users\hp\AppData\Local\Python\bin\python.exe" -m py_compile "audit_pro v0.6.0.py"`.
+
+1. **Run locally**: `& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.0.py"`
+2. **Install dependencies**: `& "C:\Users\hp\AppData\Local\Python\bin\python.exe" -m pip install pyinstaller pillow`
 
 ### Build Executable
 1. **Create/copy versioned source**: Workflow auto-selects `audit_pro v{VERSION}.py` or latest
@@ -213,7 +219,7 @@ Defined alongside the encryption helpers (lines ~98–116). Locking an engagemen
 3. **Output**: `dist/Pai Nayak and Associates.exe`
 
 ### GitHub Actions Release
-- Trigger: Git tag `v*` (e.g., `v0.5.9`)
+- Trigger: Git tag `v*` (e.g., `v0.6.0`)
 - Workflow (`.github/workflows/build-release.yml`):
   1. Set up Python 3.11
   2. Install PyInstaller + Pillow
@@ -226,7 +232,7 @@ Defined alongside the encryption helpers (lines ~98–116). Locking an engagemen
 
 | File | Purpose |
 |------|---------|
-| `audit_pro v0.5.9.py` | Main application (~8800 lines) |
+| `audit_pro v0.6.0.py` | Main application (~8700 lines) |
 | `Pai Nayak and Associates.spec` | PyInstaller spec file |
 | `.github/workflows/build-release.yml` | CI/CD for releases |
 | `Manipal_Technologies_limited.caf` | Sample audit file |

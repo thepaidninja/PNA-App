@@ -11,26 +11,26 @@ Guidance for Claude Code when working in this repository.
 | **Language** | Python 3.11 |
 | **UI** | tkinter + ttk |
 | **Distribution** | PyInstaller → standalone `.exe` |
-| **File format** | `.caf` — encrypted JSON (v0.5.9+) |
+| **File format** | `.pna` — encrypted JSON (v0.6.2+); `.caf` legacy files supported |
 | **Architecture** | Monolithic single-file (`audit_pro v{VERSION}.py`) |
-| **Current file** | `audit_pro v0.6.2.py` (~8985 lines) |
-| **APP_VERSION** | `"0.6.2"` |
+| **Current file** | `audit_pro v0.6.3.py` (~7946 lines) |
+| **APP_VERSION** | `"0.6.3"` |
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `audit_pro v0.6.2.py` | Main application — current working file |
-| `audit_pro v0.6.1.py` | Previous release |
+| `audit_pro v0.6.3.py` | Main application — current working file |
+| `audit_pro v0.6.2.py` | Previous release |
 | `Pai Nayak and Associates.spec` | PyInstaller build spec |
 | `.github/workflows/build-release.yml` | CI/CD release workflow |
-| `Manipal_Technologies_limited.caf` | Sample audit file |
+| `Manipal_Technologies_limited.pna` | Sample audit file |
 
 ## Run Locally
 
 ```powershell
 # Python is NOT on PATH — use full path
-& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.2.py"
+& "C:\Users\hp\AppData\Local\Python\bin\python.exe" "audit_pro v0.6.3.py"
 ```
 
 ## Essential Mental Model

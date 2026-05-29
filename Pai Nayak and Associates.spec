@@ -1,8 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
-    ['audit_pro.py'],
+    ['audit_pro v0.6.4.py'],
     pathex=[],
     binaries=[],
     datas=[],

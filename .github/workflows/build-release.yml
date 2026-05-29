@@ -23,17 +23,18 @@ jobs:
       - name: Install dependencies
         run: pip install pyinstaller pillow
 
-      - name: Prepare source file
+      - name: Patch spec entry point
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
           $versioned = "audit_pro v$version.py"
-          if (Test-Path $versioned) {
-            Copy-Item $versioned audit_pro.py
-          } else {
-            $latest = Get-ChildItem "audit_pro v*.py" | Sort-Object Name | Select-Object -Last 1
-            Copy-Item $latest.FullName audit_pro.py
+          if (-not (Test-Path $versioned)) {
+            $versioned = (Get-ChildItem "audit_pro v*.py" | Where-Object { $_.Name -notlike "*.bak*" } | Sort-Object Name | Select-Object -Last 1).Name
           }
+          $spec = Get-Content "Pai Nayak and Associates.spec" -Raw
+          $spec = $spec -replace "'audit_pro v[\d.]+\.py'", "'$versioned'"
+          Set-Content "Pai Nayak and Associates.spec" $spec
+          Write-Host "Building from: $versioned"
 
       - name: Build executable
         run: pyinstaller "Pai Nayak and Associates.spec"

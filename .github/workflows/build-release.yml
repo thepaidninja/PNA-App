@@ -9,6 +9,67 @@ permissions:
   contents: write
 
 jobs:
+  build-macos:
+    runs-on: macos-13   # Intel x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyinstaller pillow
+
+      - name: Prepare source file
+        run: |
+          version="${{ github.ref_name }}"
+          version="${version#v}"
+          versioned="audit_pro v${version}.py"
+          if [ -f "$versioned" ]; then
+            cp "$versioned" audit_pro.py
+          else
+            latest=$(find . -maxdepth 1 -name "audit_pro v*.py" | sort | tail -1)
+            cp "$latest" audit_pro.py
+          fi
+
+      - name: Generate app icon (PNG)
+        run: python generate_icon.py --png
+
+      - name: Create ICNS from PNG
+        run: |
+          mkdir -p AppIcon.iconset
+          sips -z 16  16  app_icon.png --out AppIcon.iconset/icon_16x16.png
+          sips -z 32  32  app_icon.png --out AppIcon.iconset/icon_16x16@2x.png
+          sips -z 32  32  app_icon.png --out AppIcon.iconset/icon_32x32.png
+          sips -z 64  64  app_icon.png --out AppIcon.iconset/icon_32x32@2x.png
+          sips -z 128 128 app_icon.png --out AppIcon.iconset/icon_128x128.png
+          sips -z 256 256 app_icon.png --out AppIcon.iconset/icon_128x128@2x.png
+          sips -z 256 256 app_icon.png --out AppIcon.iconset/icon_256x256.png
+          sips -z 512 512 app_icon.png --out AppIcon.iconset/icon_256x256@2x.png
+          iconutil -c icns AppIcon.iconset -o app_icon.icns
+
+      - name: Build app bundle
+        run: pyinstaller "Pai Nayak and Associates (macOS).spec"
+
+      - name: Create DMG
+        run: |
+          version="${{ github.ref_name }}"
+          version="${version#v}"
+          hdiutil create \
+            -volname "Pai Nayak and Associates" \
+            -srcfolder "dist/Pai Nayak and Associates.app" \
+            -ov -format UDZO \
+            "Pai Nayak and Associates v${version} (macOS Intel).dmg"
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "Pai Nayak and Associates v* (macOS Intel).dmg"
+          generate_release_notes: false
+
   build:
     runs-on: windows-latest
 
@@ -35,6 +96,9 @@ jobs:
           $spec = $spec -replace "'audit_pro v[\d.]+\.py'", "'$versioned'"
           Set-Content "Pai Nayak and Associates.spec" $spec
           Write-Host "Building from: $versioned"
+
+      - name: Generate app icon
+        run: python generate_icon.py
 
       - name: Build executable
         run: pyinstaller "Pai Nayak and Associates.spec"
